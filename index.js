@@ -5,18 +5,17 @@ const helmet = require('helmet');
 const passport = require('passport');
 const timeout = require('./middlewares/timeout.js');
 const logger = require('./middlewares/morgan.js');
-const { version } = require('./package.json');
+const { version, homepage } = require('./package.json');
 require('./passport.js');
 
 // Routes
 const IndexRouter = require('./routes/Index.js');
-const SPCRouter = require('./routes/SPC.js');
-const APIRouter = require('./routes/v1.js');
+const BenefitsRouter = require('./routes/Benefits.js');
 
 // Axios instance
 const axios = require('axios');
 axios.defaults.timeout = 14000;
-axios.defaults.headers.common['User-Agent'] = `Mozilla/5.0 (compatible; StellaMirror${process.env.MIRROR_ID}/${version}; +https://stella.sefinek.net)`;
+axios.defaults.headers.common['User-Agent'] = `Mozilla/5.0 (compatible; StellaMirror${process.env.MIRROR_ID}/${version}; +https://${homepage})`;
 
 // Create express app
 const app = express();
@@ -35,8 +34,7 @@ app.use(logger);
 
 // Routes
 app.use(IndexRouter);
-app.use('/api/v1', SPCRouter);
-app.use('/api/v1', APIRouter);
+app.use('/api/v2', BenefitsRouter);
 
 
 // Run the server
