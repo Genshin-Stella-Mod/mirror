@@ -21,7 +21,7 @@ exports.download = async (req, res) => {
 
 		// Captcha redirect
 		if (!data.verified) {
-			return res.status(307).redirect(`${process.env.PATRON_CENTER}/stella-mod-plus/benefits/receive/${userId}/${data.registrySecretKey}/captcha`);
+			return res.status(307).redirect(`${process.env.PATRON_CENTER}/benefits/stella-mod-plus/receive/${userId}/${data.registrySecretKey}/captcha`);
 		}
 
 		// Zip file
