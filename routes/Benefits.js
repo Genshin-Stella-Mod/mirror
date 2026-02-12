@@ -2,7 +2,7 @@ const router = require('express').Router();
 const { param } = require('express-validator');
 const DownloadBenefitsController = require('../controllers/benefits/DownloadBenefits.js');
 
-router.get('/benefits/stella-mod-plus/receive/:userId/:registrySecretKey/download', [
+router.get('/stella-mod-plus/benefits/receive/:userId/:registrySecretKey/download', [
 	param('userId')
 		.notEmpty()
 		.isString()

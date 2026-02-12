@@ -15,7 +15,7 @@ const BenefitsRouter = require('./routes/Benefits.js');
 // Axios instance
 const axios = require('axios');
 axios.defaults.timeout = 14000;
-axios.defaults.headers.common['User-Agent'] = `Mozilla/5.0 (compatible; StellaMirror${process.env.MIRROR_ID}/${version}; +https://${homepage})`;
+axios.defaults.headers.common['User-Agent'] = `Mozilla/5.0 (compatible; StellaMirror${process.env.MIRROR_ID}/${version}; +${homepage})`;
 
 // Create express app
 const app = express();

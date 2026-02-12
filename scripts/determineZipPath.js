@@ -1,8 +1,6 @@
 const path = require('node:path');
 
-const benefitsDir = process.env.NODE_ENV === 'production'
-	? process.env.RESOURCES_REMOTE
-	: process.env.RESOURCES_LOCAL;
+const benefitsDir = process.env.STELLA_BENEFITS_DIR;
 
 module.exports = benefitId => {
 	switch (benefitId) {

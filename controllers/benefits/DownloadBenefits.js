@@ -10,58 +10,38 @@ const prefix = '[DownloadBenefits]:';
 exports.download = async (req, res) => {
 	try {
 		const errors = validationResult(req);
-		if (!errors.isEmpty()) throw { status: 400, message: errors.array() };
+		if (!errors.isEmpty()) return sendResult(res, { status: 400, message: errors.array() });
 
-		const { registrySecretKey } = req.params;
-		if (!registrySecretKey) throw { status: 400, message: 'Registry secret key is invalid.' };
+		const { userId, registrySecretKey } = req.params;
 
-		const { userId } = req.params;
-		if (!userId) throw { status: 400, message: 'User ID is invalid.' };
+		// API validates device status, subscription, and mirror match
+		const { data } = await axios.get(`${process.env.STELLA_API}/mirror/download-check`, {
+			headers: { 'X-Registry-Secret-Key': registrySecretKey, 'X-Secret-Key': generateSecret(), 'X-User-IP': req.ip },
+		});
 
-		// Secret key
-		const secret = generateSecret();
+		// Captcha redirect
+		if (!data.verified) {
+			return res.status(307).redirect(`${process.env.PATRON_CENTER}/stella-mod-plus/benefits/receive/${userId}/${data.registrySecretKey}/captcha`);
+		}
 
-		// Fetch device info from external API
-		const deviceResponse = await axios.get(`${process.env.STELLA_API}/mirror/device`, { headers: { 'X-Registry-Secret-Key': registrySecretKey, 'X-Secret-Key': secret, 'X-User-IP': req.ip } });
-		if (!deviceResponse.data) throw { status: 400, message: 'Device was not found.' };
-		const device = deviceResponse.data;
+		// Zip file
+		const zipPath = determineZipPath(data.benefitId);
+		if (!zipPath || !fs.existsSync(zipPath)) {
+			console.error(prefix, `Zip file not found for benefitId ${data.benefitId} at path ${zipPath}`);
+			return sendResult(res, { status: 500, message: 'Something went wrong. Please report this error.' });
+		}
 
-		if (!device.status.active) throw { status: 403, message: 'This link is no longer active.' };
-
-		if (!device.status.verified) return res.status(307).redirect(`${process.env.PATRON_CENTER}/benefits/stella-mod-plus/receive/${userId}/${device.secret.registrySecretKey}/captcha`);
-		if (device.status.expired) throw { status: 410, message: 'This URL has expired and will never be active again.' };
-		if (device.status.downloaded) throw { status: 403, message: 'Benefits were received.' };
-
-		// Fetch subscription info from external API
-		const subsResponse = await axios.get(`${process.env.STELLA_API}/mirror/subscription`, { headers: { 'X-Registry-Secret-Key': registrySecretKey, 'X-User-Id': userId, 'X-Secret-Key': secret, 'X-User-IP': req.ip } });
-		if (!subsResponse.data) throw { status: 405, message: 'Subscription data was not found.' };
-		const subsInfo = subsResponse.data;
-
-		if (!subsInfo.isActive) throw { status: 402, message: 'Subscription is not active.' };
-
-		// Check the mirror
-		if (!subsInfo.mirror) throw { status: 500, message: 'Mirror data was not found.' };
-		const userMirror = subsInfo.mirror.selectedServer.toString();
-		if (userMirror !== process.env.MIRROR_ID) throw { status: 400, message: `The customer directed themselves to the incorrect mirror #${process.env.MIRROR_ID}! Your download server has the identifier #${userMirror}.` };
-
-		// Get the zip path
-		const zipPath = determineZipPath(subsInfo.benefitId);
-		if (!zipPath) throw { status: 500, message: `Unknown zip path (${zipPath}) for benefit id ${subsInfo.benefitId}` };
-		if (!fs.existsSync(zipPath)) throw { status: 500, message: 'File doesn\'t exist. Please report this error.' };
-
-		// Update the device status via external API
+		// Mark as downloaded
 		await axios.patch(`${process.env.STELLA_API}/mirror/device/status`, {
 			status: { downloaded: true },
-		}, { headers: { 'X-User-IP': req.ip, 'X-Registry-Secret-Key': registrySecretKey, 'X-Secret-Key': secret } });
-
+		}, { headers: { 'X-User-IP': req.ip, 'X-Registry-Secret-Key': registrySecretKey, 'X-Secret-Key': generateSecret() } });
 
 		// Send file
+		console.log(prefix, `Serving zip file for ${data.email} from path ${zipPath}`);
 		res.download(zipPath);
-
-		// Final
-		console.log(prefix, `Successfully served zip file for ${subsInfo.email}`);
 	} catch (err) {
-		console.error(prefix, 'Failed to process download request.', err.response?.data || err.message);
+		if (err.response?.data?.message) return sendResult(res, { status: err.response.status, message: err.response.data.message });
+
 		sendResult(res, { status: err.status || 500, message: err.message || 'Internal server error' });
 	}
 };
