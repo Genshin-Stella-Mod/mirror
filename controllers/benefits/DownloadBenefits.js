@@ -4,8 +4,44 @@ const fs = require('node:fs');
 const generateSecret = require('../../scripts/generateSecret.js');
 const sendResult = require('../../scripts/sendResult.js');
 const determineZipPath = require('../../scripts/determineZipPath.js');
+const determineBenefitPath = require('../../scripts/determineBenefitPath.js');
 
 const prefix = '[DownloadBenefits]:';
+
+const VALID_BENEFIT_TYPES = new Set(['3dmigoto', 'addons', 'presets', 'shaders', '3dmigoto-mods']);
+
+exports.downloadBenefit = async (req, res) => {
+	try {
+		const { benefitType } = req.query;
+		if (!benefitType || !VALID_BENEFIT_TYPES.has(benefitType)) {
+			return sendResult(res, { status: 400, message: 'Invalid or missing benefitType.' });
+		}
+
+		const authHeader = req.headers['authorization'];
+		if (!authHeader) return sendResult(res, { status: 401, message: 'Missing authorization header.' });
+
+		// Validate session through API
+		const { data } = await axios.get(`${process.env.STELLA_API}/mirror/validate-session`, {
+			headers: { 'X-Secret-Key': generateSecret(), 'X-Authorization': authHeader },
+		});
+
+		if (!data.success) return sendResult(res, { status: 403, message: 'Session validation failed.' });
+
+		// Determine file path
+		const filePath = determineBenefitPath(benefitType, data.benefitId);
+		if (!filePath || !fs.existsSync(filePath)) {
+			console.error(prefix, `Benefit file not found for type=${benefitType}, benefitId=${data.benefitId}, path=${filePath}`);
+			return sendResult(res, { status: 404, message: 'Benefit file not found.' });
+		}
+
+		// Send file
+		console.log(prefix, `Serving ${benefitType} (benefitId=${data.benefitId}) from ${filePath}`);
+		res.download(filePath);
+	} catch (err) {
+		if (err.response?.data?.message) return sendResult(res, { status: err.response.status, message: err.response.data.message });
+		sendResult(res, { status: err.status || 500, message: err.message || 'Internal server error' });
+	}
+};
 
 exports.download = async (req, res) => {
 	try {
