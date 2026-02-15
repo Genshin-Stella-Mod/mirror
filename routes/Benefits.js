@@ -13,7 +13,6 @@ router.get('/stella-mod-plus/receive/:userId/:registrySecretKey/download', [
 		.isLength({ min: 256, max: 256 }),
 ], DownloadBenefitsController.download);
 
-// Health check
 router.get('/ping', (req, res) => res.sendStatus(204));
 
 module.exports = router;
