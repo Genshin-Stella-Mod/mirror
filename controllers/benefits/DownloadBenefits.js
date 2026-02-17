@@ -67,14 +67,20 @@ exports.download = async (req, res) => {
 			return sendResult(res, { status: 500, message: 'Something went wrong. Please report this error.' });
 		}
 
-		// Mark as downloaded
-		await axios.patch(`${process.env.STELLA_API}/mirror/device/status`, {
-			status: { downloaded: true },
-		}, { headers: { 'X-User-IP': req.ip, 'X-Registry-Secret-Key': registrySecretKey, 'X-Secret-Key': generateSecret() } });
-
-		// Send file
+		// Send file — mark as downloaded only after successful transfer
 		console.log(prefix, `Serving zip file for ${data.email} from path ${zipPath}`);
-		res.download(zipPath);
+		res.download(zipPath, (downloadErr) => {
+			if (downloadErr) {
+				if (!res.headersSent) sendResult(res, { status: 500, message: 'File transfer failed.' });
+				console.error(prefix, `File transfer failed for ${data.email}:`, downloadErr.message);
+				return;
+			}
+
+			axios.patch(`${process.env.STELLA_API}/mirror/device/status`, {
+				status: { downloaded: true },
+			}, { headers: { 'X-User-IP': req.ip, 'X-Registry-Secret-Key': registrySecretKey, 'X-Secret-Key': generateSecret() } })
+				.catch(patchErr => console.error(prefix, 'Failed to update download status:', patchErr.message));
+		});
 	} catch (err) {
 		if (err.response?.data?.message) return sendResult(res, { status: err.response.status, message: err.response.data.message });
 

@@ -2,11 +2,10 @@ process.loadEnvFile();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const passport = require('passport');
 const timeout = require('./middlewares/timeout.js');
 const logger = require('./middlewares/morgan.js');
+const limiter = require('./middlewares/ratelimit.js');
 const { version, homepage } = require('./package.json');
-require('./passport.js');
 
 // Routes
 const IndexRouter = require('./routes/Index.js');
@@ -26,7 +25,7 @@ app.set('trust proxy', 1);
 // Middlewares
 app.use(cors());
 app.use(helmet());
-app.use(passport.initialize());
+app.use(limiter.general);
 app.use(timeout());
 app.use(express.static('public'));
 app.use(logger);

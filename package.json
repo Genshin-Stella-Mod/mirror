@@ -24,10 +24,7 @@
     "express-timeout-handler": "^2.2.2",
     "express-validator": "^7.3.1",
     "helmet": "^8.1.0",
-    "jsonwebtoken": "^9.0.3",
-    "morgan": "^1.10.1",
-    "passport": "^0.7.0",
-    "passport-http-bearer": "^1.0.1"
+    "morgan": "^1.10.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
