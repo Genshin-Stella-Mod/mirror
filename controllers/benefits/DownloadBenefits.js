@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { validationResult } = require('express-validator');
-const fs = require('node:fs');
+const fs = require('node:fs/promises');
 const generateSecret = require('../../scripts/generateSecret.js');
 const sendResult = require('../../scripts/sendResult.js');
 const determineZipPath = require('../../scripts/determineZipPath.js');
@@ -25,18 +25,27 @@ exports.downloadBenefit = async (req, res) => {
 			headers: { 'X-Secret-Key': generateSecret(), 'X-Authorization': authHeader },
 		});
 
-		if (!data.success) return sendResult(res, { status: 403, message: 'Session validation failed.' });
+		if (!data?.success) return sendResult(res, { status: 403, message: 'Session validation failed.' });
 
 		// Determine file path
 		const filePath = determineBenefitPath(benefitType, data.benefitId);
-		if (!filePath || !fs.existsSync(filePath)) {
-			console.error(prefix, `Benefit file not found for type=${benefitType}, benefitId=${data.benefitId}, path=${filePath}`);
+		if (!filePath) {
+			console.error(prefix, `Benefit file not found for type=${benefitType}, benefitId=${data.benefitId}`);
+			return sendResult(res, { status: 404, message: 'Benefit file not found.' });
+		}
+
+		try {
+			await fs.access(filePath);
+		} catch {
+			console.error(prefix, `Benefit file not found at path=${filePath}`);
 			return sendResult(res, { status: 404, message: 'Benefit file not found.' });
 		}
 
 		// Send file
 		console.log(prefix, `Serving ${benefitType} (benefitId=${data.benefitId}) from ${filePath}`);
-		res.download(filePath);
+		res.download(filePath, (err) => {
+			if (err && !res.headersSent) sendResult(res, { status: 500, message: 'File transfer failed.' });
+		});
 	} catch (err) {
 		if (err.response?.data?.message) return sendResult(res, { status: err.response.status, message: err.response.data.message });
 		sendResult(res, { status: err.status || 500, message: err.message || 'Internal server error' });
@@ -56,23 +65,33 @@ exports.download = async (req, res) => {
 		});
 
 		// Captcha redirect
+		if (!data?.success) return sendResult(res, { status: 403, message: 'Session validation failed.' });
+
 		if (!data.verified) {
+			if (!data.registrySecretKey) return sendResult(res, { status: 403, message: 'Session validation failed.' });
 			return res.status(307).redirect(`${process.env.PATRON_CENTER}/benefits/stella-mod-plus/receive/${userId}/${data.registrySecretKey}/captcha`);
 		}
 
 		// Zip file
 		const zipPath = determineZipPath(data.benefitId);
-		if (!zipPath || !fs.existsSync(zipPath)) {
-			console.error(prefix, `Zip file not found for benefitId ${data.benefitId} at path ${zipPath}`);
+		if (!zipPath) {
+			console.error(prefix, `Zip path could not be determined for benefitId ${data.benefitId}`);
+			return sendResult(res, { status: 500, message: 'Something went wrong. Please report this error.' });
+		}
+
+		try {
+			await fs.access(zipPath);
+		} catch {
+			console.error(prefix, `Zip file not found at path ${zipPath}`);
 			return sendResult(res, { status: 500, message: 'Something went wrong. Please report this error.' });
 		}
 
 		// Send file — mark as downloaded only after successful transfer
-		console.log(prefix, `Serving zip file for ${data.email} from path ${zipPath}`);
+		console.log(prefix, `Serving zip file from path ${zipPath}`);
 		res.download(zipPath, (downloadErr) => {
 			if (downloadErr) {
 				if (!res.headersSent) sendResult(res, { status: 500, message: 'File transfer failed.' });
-				console.error(prefix, `File transfer failed for ${data.email}:`, downloadErr.message);
+				console.error(prefix, 'File transfer failed:', downloadErr.message);
 				return;
 			}
 

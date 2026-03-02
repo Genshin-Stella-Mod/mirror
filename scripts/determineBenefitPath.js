@@ -14,7 +14,7 @@ module.exports = (benefitType, benefitId) => {
 	if (commonFile) return path.join(benefitsDir, commonFile);
 
 	if (benefitType === '3dmigoto-mods') {
-		const tierDir = benefitId === 2 ? '2' : '3';
+		const tierDir = Number(benefitId) === 2 ? '2' : '3';
 		return path.join(benefitsDir, tierDir, '3DMigoto Mods.zip');
 	}
 
