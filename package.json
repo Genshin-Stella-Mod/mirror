@@ -3,11 +3,11 @@
   "version": "2.1.0-rc.1+20260302",
   "homepage": "https://stella.sefinek.net",
   "bugs": {
-    "url": "https://github.com/sefinek/Stella-Plus-Mirror/issues"
+    "url": "https://github.com/Genshin-Stella-Mod/mirror/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sefinek/Stella-Plus-Mirror.git"
+    "url": "git+https://github.com/Genshin-Stella-Mod/mirror.git"
   },
   "license": "SEE LICENSE IN LICENSE.txt",
   "author": "Sefinek <contact@sefinek.net> (https://sefinek.net)",
