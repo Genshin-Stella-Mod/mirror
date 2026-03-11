@@ -86,7 +86,7 @@ exports.download = async (req, res) => {
 			return sendResult(res, { status: 500, message: 'Something went wrong. Please report this error.' });
 		}
 
-		// Send file — mark as downloaded only after successful transfer
+		// Send file - mark as downloaded only after successful transfer
 		console.log(prefix, `Serving zip file from path ${zipPath}`);
 		res.download(zipPath, (downloadErr) => {
 			if (downloadErr) {
@@ -101,8 +101,9 @@ exports.download = async (req, res) => {
 				.catch(patchErr => console.error(prefix, 'Failed to update download status:', patchErr.message));
 		});
 	} catch (err) {
-		if (err.response?.data?.message) return sendResult(res, { status: err.response.status, message: err.response.data.message });
+		console.error(err);
 
+		if (err.response?.data?.message) return sendResult(res, { status: err.response.status, message: err.response.data.message });
 		sendResult(res, { status: err.status || 500, message: err.message || 'Internal server error' });
 	}
 };
