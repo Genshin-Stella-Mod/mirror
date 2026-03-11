@@ -101,7 +101,7 @@ exports.download = async (req, res) => {
 				.catch(patchErr => console.error(prefix, 'Failed to update download status:', patchErr.message));
 		});
 	} catch (err) {
-		console.error(err);
+		console.error(err.stack);
 
 		if (err.response?.data?.message) return sendResult(res, { status: err.response.status, message: err.response.data.message });
 		sendResult(res, { status: err.status || 500, message: err.message || 'Internal server error' });
