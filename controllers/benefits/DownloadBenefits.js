@@ -3,8 +3,9 @@ const { validationResult } = require('express-validator');
 const fs = require('node:fs/promises');
 const generateSecret = require('../../scripts/generateSecret.js');
 const sendResult = require('../../scripts/sendResult.js');
-const determineZipPath = require('../../scripts/determineZipPath.js');
 const determineBenefitPath = require('../../scripts/determineBenefitPath.js');
+
+const benefitsZipPath = process.env.STELLA_BENEFITS_FILE;
 
 const prefix = '[DownloadBenefits]:';
 
@@ -72,23 +73,19 @@ exports.download = async (req, res) => {
 			return res.status(307).redirect(`${process.env.PATRON_CENTER}/benefits/stella-mod-plus/receive/${userId}/${data.registrySecretKey}/captcha`);
 		}
 
-		// Zip file
-		const zipPath = determineZipPath(data.benefitId);
-		if (!zipPath) {
-			console.error(prefix, `Zip path could not be determined for benefitId ${data.benefitId}`);
+		try {
+			await fs.access(benefitsZipPath);
+		} catch {
+			console.error(prefix, `Zip file not found at path ${benefitsZipPath}`);
 			return sendResult(res, { status: 500, message: 'Something went wrong. Please report this error.' });
 		}
 
-		try {
-			await fs.access(zipPath);
-		} catch {
-			console.error(prefix, `Zip file not found at path ${zipPath}`);
-			return sendResult(res, { status: 500, message: 'Something went wrong. Please report this error.' });
-		}
+		const safeUsername = (data.username || 'user').replace(/[^a-zA-Z0-9_-]/g, '_');
+		const downloadName = `${safeUsername}-stella-plus-benefits.zip`;
 
 		// Send file - mark as downloaded only after successful transfer
-		console.log(prefix, `Serving zip file from path ${zipPath}`);
-		res.download(zipPath, (downloadErr) => {
+		console.log(prefix, `Serving ${downloadName}`);
+		res.download(benefitsZipPath, downloadName, (downloadErr) => {
 			if (downloadErr) {
 				if (!res.headersSent) sendResult(res, { status: 500, message: 'File transfer failed.' });
 				console.error(prefix, 'File transfer failed:', downloadErr.message);

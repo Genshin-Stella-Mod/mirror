@@ -1,6 +1,6 @@
 const path = require('node:path');
 
-const benefitsDir = process.env.STELLA_BENEFITS_DIR;
+const benefitsDir = process.env.STELLA_BENEFITS_FILE;
 
 const COMMON_FILES = Object.freeze({
 	'3dmigoto': '3DMigoto.zip',
