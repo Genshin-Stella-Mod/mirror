@@ -1,22 +1,16 @@
 const path = require('node:path');
 
-const benefitsDir = process.env.STELLA_BENEFITS_FILE;
+const benefitsDir = process.env.STELLA_BENEFITS_DIR;
 
-const COMMON_FILES = Object.freeze({
-	'3dmigoto': '3DMigoto.zip',
-	'addons': 'Addons.zip',
-	'presets': 'Presets.zip',
-	'shaders': 'Shaders.zip',
+const BENEFIT_FILES = Object.freeze({
+	'3dmigoto':      '3DMigoto.zip',
+	'3dmigoto-mods': '3DMigoto Mods.zip',
+	'addons':        'Addons.zip',
+	'presets':       'Presets.zip',
+	'shaders':       'Shaders.zip',
 });
 
-module.exports = (benefitType, benefitId) => {
-	const commonFile = COMMON_FILES[benefitType];
-	if (commonFile) return path.join(benefitsDir, commonFile);
-
-	if (benefitType === '3dmigoto-mods') {
-		const tierDir = Number(benefitId) === 2 ? '2' : '3';
-		return path.join(benefitsDir, tierDir, '3DMigoto Mods.zip');
-	}
-
-	return null;
+module.exports = (benefitType) => {
+	const file = BENEFIT_FILES[benefitType];
+	return file ? path.join(benefitsDir, file) : null;
 };

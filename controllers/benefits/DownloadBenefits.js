@@ -1,11 +1,12 @@
 const axios = require('axios');
 const { validationResult } = require('express-validator');
 const fs = require('node:fs/promises');
+const path = require('node:path');
 const generateSecret = require('../../scripts/generateSecret.js');
 const sendResult = require('../../scripts/sendResult.js');
 const determineBenefitPath = require('../../scripts/determineBenefitPath.js');
 
-const benefitsZipPath = process.env.STELLA_BENEFITS_FILE;
+const benefitsZipPath = path.join(process.env.STELLA_BENEFITS_DIR, 'compiled-benefits.zip');
 
 const prefix = '[DownloadBenefits]:';
 
@@ -29,9 +30,9 @@ exports.downloadBenefit = async (req, res) => {
 		if (!data?.success) return sendResult(res, { status: 403, message: 'Session validation failed.' });
 
 		// Determine file path
-		const filePath = determineBenefitPath(benefitType, data.benefitId);
+		const filePath = determineBenefitPath(benefitType);
 		if (!filePath) {
-			console.error(prefix, `Benefit file not found for type=${benefitType}, benefitId=${data.benefitId}`);
+			console.error(prefix, `Benefit file not found for type=${benefitType}`);
 			return sendResult(res, { status: 404, message: 'Benefit file not found.' });
 		}
 

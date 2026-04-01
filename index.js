@@ -23,7 +23,7 @@ const app = express();
 app.set('trust proxy', 1);
 
 // Middlewares
-app.use(cors());
+app.use(cors({ exposedHeaders: ['Content-Disposition'] }));
 app.use(helmet());
 app.use(limiter.general);
 app.use(timeout());
