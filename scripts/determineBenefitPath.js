@@ -10,7 +10,7 @@ const BENEFIT_FILES = Object.freeze({
 	'shaders':       'Shaders.zip',
 });
 
-module.exports = (benefitType) => {
+module.exports = benefitType => {
 	const file = BENEFIT_FILES[benefitType];
 	return file ? path.join(benefitsDir, file) : null;
 };

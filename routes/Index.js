@@ -1,7 +1,5 @@
 const router = require('express').Router();
 
-router.get('/', (req, res) => {
-	res.send(`<h1>Stella Mod - Mirror #${process.env.MIRROR_ID}</h1>`);
-});
+router.get('/', (req, res) => res.status(418).end());
 
 module.exports = router;

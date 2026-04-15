@@ -36,6 +36,12 @@ app.use(IndexRouter);
 app.use('/api/v2', BenefitsRouter);
 
 
+// Errors
+app.use((req, res) => res.status(404).end());
+app.use((err, req, res, _next) => res.status(500).end());
+
+
+
 // Run the server
 const { PORT } = process.env;
 app.listen(PORT, () => process.send ? process.send('ready') : console.log(`Server running at http://127.0.0.1:${PORT}`));
